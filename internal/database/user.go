@@ -164,3 +164,59 @@ func (db *DB) VerifyUser(email, password string) (*User, error) {
 
 	return &user, nil
 }
+
+func (db *DB) UpdateUser(id int, username, email string) (*User, error) {
+	var updates []string
+	var args []interface{}
+	argCount := 1
+
+	if username != "" {
+		updates = append(updates, fmt.Sprintf("username = $%d", argCount))
+		args = append(args, username)
+		argCount++
+	}
+	if email != "" {
+		updates = append(updates, fmt.Sprintf("email = $%d", argCount))
+		args = append(args, email)
+		argCount++
+	}
+
+	if len(updates) == 0 {
+		return nil, errors.ErrInternalServer
+	}
+
+	args = append(args, id)
+	query := fmt.Sprintf(
+		"UPDATE users SET %s WHERE id = $%d RETURNING id, username, email",
+		strings.Join(updates, ", "),
+		argCount,
+	)
+
+	var user User
+	scanArgs := []interface{}{&user.ID}
+	if db.Config.User.RequireUsername {
+		scanArgs = append(scanArgs, &user.Username)
+	}
+	if db.Config.User.RequireEmail {
+		scanArgs = append(scanArgs, &user.Email)
+	}
+
+	if err := db.Pool.QueryRow(context.Background(), query, args...).Scan(scanArgs...); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (db *DB) DeleteUser(id int) error {
+	result, err := db.Pool.Exec(context.Background(), "DELETE FROM users WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return errors.ErrUserNotFound
+	}
+
+	return nil
+}

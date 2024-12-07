@@ -16,6 +16,11 @@ type UserHandler struct {
 	auth  *auth.JWT
 }
 
+type updateUserRequest struct {
+	Username string `json:"username,omitempty"`
+	Email    string `json:"email,omitempty"`
+}
+
 func NewUserHandler(store database.UserStore, auth *auth.JWT) *UserHandler {
 	return &UserHandler{store: store, auth: auth}
 }
@@ -97,12 +102,39 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 // UpdateUser handles PUT /api/users/[id]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request, id string) {
-	// TODO: Implement user update
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	userID, err := strconv.Atoi(id)
+	if err != nil {
+		respondWithError(w, errors.APIError{Code: 400, Message: "invalid user ID"})
+		return
+	}
+
+	var req updateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, errors.ErrInvalidInput)
+		return
+	}
+
+	user, err := h.store.UpdateUser(userID, req.Username, req.Email)
+	if err != nil {
+		respondWithError(w, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, user)
 }
 
 // DeleteUser handles DELETE /api/users/[id]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request, id string) {
-	// TODO: Implement user deletion
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	userID, err := strconv.Atoi(id)
+	if err != nil {
+		respondWithError(w, errors.APIError{Code: 400, Message: "invalid user ID"})
+		return
+	}
+
+	if err := h.store.DeleteUser(userID); err != nil {
+		respondWithError(w, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "user deleted"})
 }

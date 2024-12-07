@@ -5,6 +5,8 @@ type UserStore interface {
 	GetUserByID(id int) (*User, error)
 	GetUsers() ([]User, error)
 	VerifyUser(username, password string) (*User, error)
+	UpdateUser(id int, username, email string) (*User, error)
+	DeleteUser(id int) error
 }
 
 var _ UserStore = &DB{}
