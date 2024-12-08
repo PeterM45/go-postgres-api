@@ -12,7 +12,7 @@ Simple, lightweight authentication system built with Go and PostgreSQL.
 1. Clone and setup
 
 ```bash
-git clone https://github.com/yourusername/go-postgres-api
+git clone https://github.com/PeterM45/go-postgres-api
 cd go-postgres-api
 ```
 
